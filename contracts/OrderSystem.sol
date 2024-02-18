@@ -61,7 +61,7 @@ contract OrderSystem {
             "Only customer can confirm delivery"
         );
         order.state = OrderState.Delivered;
-
+        // remove from current orders and add to completed orders
         for (uint i = 0; i < profile.currentOrders.length; i++) {
             if (profile.currentOrders[i] == deliveredOrder) {
                 profile.currentOrders[i] = profile.currentOrders[
@@ -86,12 +86,12 @@ contract OrderSystem {
         return (profiles[_user].name, profiles[_user].age);
     }
 
-    function getOrderState(uint orderId) public view returns (OrderState) {
-        return orders[orderId].state;
+    function getOrderState(uint id) public view returns (OrderState) {
+        return orders[id].state;
     }
 
-    function getOrder(uint orderId) public view returns (Order memory) {
-        return orders[orderId];
+    function getOrder(uint id) public view returns (Order memory) {
+        return orders[id];
     }
 
     function getOrders(address _user) public view returns (uint[] memory) {

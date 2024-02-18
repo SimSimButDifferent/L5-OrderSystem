@@ -20,7 +20,6 @@ describe("OrderSystem", function () {
             expect(order.customer).to.equal(owner.address)
             expect(order.amount).to.equal(orderAmount)
             expect(order.state).to.equal(0) // OrderState.Created
-            console.log(order.id.toString())
         })
     })
     describe("confirmOrder", function () {

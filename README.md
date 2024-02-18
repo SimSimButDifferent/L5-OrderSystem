@@ -1,10 +1,17 @@
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
+## To run locally
+
+```bash
+git clone https://github.com/SimSimButDifferent/L5-OrderSystem.git
+
+yarn
 ```
+
+```bash
+yarn hardhat node
+yarn hardhat run scripts/deploy.js
+```
+
+### To play around with a front end, paste into Remix IDE ---> remix.ethereum.org
 
 ### Lesson 5: Advanced Data Types in Solidity
 
@@ -12,9 +19,9 @@ npx hardhat run scripts/deploy.js
 
 #### Part 1: Enums
 
-- **Understanding Enums**:
-  - Enums (enumerated types) allow for the creation of custom types with a limited set of 'constant values'. They are useful for representing state, choices, or categories within contracts.
-- **Example of Using Enums**:
+-   **Understanding Enums**:
+    -   Enums (enumerated types) allow for the creation of custom types with a limited set of 'constant values'. They are useful for representing state, choices, or categories within contracts.
+-   **Example of Using Enums**:
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -39,11 +46,11 @@ contract Example {
 
 #### Part 2: Structs
 
-- **Introduction to Structs**:
-  - Structs allow for the grouping of related properties into a single type, facilitating the management of complex data.
-- **Using Structs in Solidity**:
-  - Declaring structs and creating instances within contracts.
-- **Example: Structs for Storing User Data**:
+-   **Introduction to Structs**:
+    -   Structs allow for the grouping of related properties into a single type, facilitating the management of complex data.
+-   **Using Structs in Solidity**:
+    -   Declaring structs and creating instances within contracts.
+-   **Example: Structs for Storing User Data**:
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -64,9 +71,9 @@ contract Users {
 
 #### Part 3: Mappings
 
-- **Purpose and Functionality of Mappings**:
-  - Mappings are key-value stores for efficiently storing and retrieving data based on keys. They are one of the most used data types for managing state in contracts.
-- **Example: Using Mappings**:
+-   **Purpose and Functionality of Mappings**:
+    -   Mappings are key-value stores for efficiently storing and retrieving data based on keys. They are one of the most used data types for managing state in contracts.
+-   **Example: Using Mappings**:
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -88,9 +95,9 @@ contract Bank {
 
 #### Part 4: Arrays
 
-- **Understanding Dynamic and Fixed-size Arrays**:
-  - Solidity supports both dynamic arrays (whose length can change) and fixed-size arrays. Each type has its use cases and limitations.
-- **Example: Dynamic Arrays for Storing Data**:
+-   **Understanding Dynamic and Fixed-size Arrays**:
+    -   Solidity supports both dynamic arrays (whose length can change) and fixed-size arrays. Each type has its use cases and limitations.
+-   **Example: Dynamic Arrays for Storing Data**:
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -117,15 +124,15 @@ contract MyContract {
 
 **Assignment 1**:
 
-- Write a brief essay on how and why to use structs and mappings together in Solidity contracts to manage complex data.
+-   Write a brief essay on how and why to use structs and mappings together in Solidity contracts to manage complex data.
 
 **Exercise 1**:
 
-- Implement a smart contract using enums to manage the state of a simple process, like an order system.
+-   Implement a smart contract using enums to manage the state of a simple process, like an order system.
 
 **Exercise 2**:
 
-- Create a contract utilizing structs to store user profiles and mappings to efficiently look up profiles by Ethereum addresses.
+-   Create a contract utilizing structs to store user profiles and mappings to efficiently look up profiles by Ethereum addresses.
 
 ---
 
