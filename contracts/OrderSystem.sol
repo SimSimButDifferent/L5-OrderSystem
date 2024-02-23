@@ -83,6 +83,12 @@ contract OrderSystem {
         // Check if the amount is greater than 0
         require(_amount > 0, "Amount should be greater than 0");
 
+        // Must create a user profile before placing an order
+        require(
+            bytes(profiles[_customer].name).length > 0,
+            "User profile does not exist"
+        );
+
         // Sets the orderId to the created order then increments OrderId
         uint currentOrderId = orderId;
         orderId++;

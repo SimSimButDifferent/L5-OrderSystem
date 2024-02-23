@@ -10,9 +10,17 @@ describe("OrderSystem", function () {
         OrderSystem = await ethers.getContractFactory("OrderSystem")
         ;[owner, addr1] = await ethers.getSigners()
         orderSystem = await OrderSystem.deploy()
+        const name = "Alice"
+        const age = "25"
+        await orderSystem.connect(owner).setProfile(name, age)
     })
 
     describe("createOrder", function () {
+        it("Should revert if User is not registered", async function () {
+            await expect(
+                orderSystem.createOrder(addr1.address, orderAmount),
+            ).to.be.revertedWith("User profile does not exist")
+        })
         it("Should create an order", async function () {
             await orderSystem.createOrder(owner.address, orderAmount)
             const order = await orderSystem.getOrder(orderId)
@@ -146,6 +154,24 @@ describe("OrderSystem", function () {
             await expect(
                 orderSystem.connect(owner).setProfile(name, age),
             ).to.be.revertedWith("Age cannot be empty")
+        })
+    })
+
+    describe("Getter functions", function () {
+        beforeEach(async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+        })
+
+        describe("getOrder", function () {
+            it("Should get an a users multiple orders", async function () {
+                await orderSystem.createOrder(owner.address, orderAmount)
+                const order = await orderSystem.getMyOrders()
+                const order1 = order[0]
+                const order2 = order[1]
+                expect(order1).to.equal(0)
+                expect(order2).to.equal(1)
+            })
         })
     })
 })
