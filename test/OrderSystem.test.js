@@ -22,6 +22,25 @@ describe("OrderSystem", function () {
             expect(order.state).to.equal(0) // OrderState.Created
         })
 
+        it("Should revert if order amount is 0", async function () {
+            await expect(
+                orderSystem.createOrder(owner.address, 0),
+            ).to.be.revertedWith("Amount should be greater than 0")
+        })
+
+        it("Should allow multiple orders", async function () {
+            const order1 = await orderSystem.createOrder(
+                owner.address,
+                orderAmount,
+            )
+            const order2 = await orderSystem.createOrder(
+                owner.address,
+                orderAmount,
+            )
+            const order = await orderSystem.getOrder(orderId + 1)
+            expect(order.id).to.equal(orderId + 1)
+        })
+
         it("Should emit an OrderCreated event", async function () {
             await expect(orderSystem.createOrder(owner.address, orderAmount))
                 .to.emit(orderSystem, "OrderCreated")

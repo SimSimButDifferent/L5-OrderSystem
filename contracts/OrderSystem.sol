@@ -80,6 +80,9 @@ contract OrderSystem {
         address _customer,
         uint _amount
     ) public returns (uint) {
+        // Check if the amount is greater than 0
+        require(_amount > 0, "Amount should be greater than 0");
+
         // Sets the orderId to the created order then increments OrderId
         uint currentOrderId = orderId;
         orderId++;
@@ -211,6 +214,8 @@ contract OrderSystem {
      * @return Order details
      */
     function getOrder(uint id) public view returns (Order memory) {
+        require(orders[id].id == id, "Order does not exist");
+
         return orders[id];
     }
 
@@ -219,7 +224,19 @@ contract OrderSystem {
      * @param _user Address of the user
      * @return Orders of the user
      */
-    function getOrders(address _user) public view returns (uint[] memory) {
+    function getOrders(address _user) public view onlyOwner returns (uint[] memory) {
+        require(
+            bytes(profiles[_user].name).length > 0,
+            "Profile does not exist for the given address"
+        );
         return profiles[_user].currentOrders;
+    }
+
+    function getMyOrders() public view returns (uint[] memory) {
+        require(
+            bytes(profiles[msg.sender].name).length > 0,
+            "Profile does not exist for the given address");
+
+        return profiles[msg.sender].currentOrders;
     }
 }
