@@ -105,17 +105,19 @@ contract OrderSystem {
      * @param deliveredOrder Order to be delivered
      */
     function confirmDelivery(uint deliveredOrder) public {
+        // require that the msg.sender is the user who created the order
+        require(
+            msg.sender == orders[deliveredOrder].customer,
+            "Only customer can confirm delivery"
+        );
         // Get the order to be delivered
         Order storage order = orders[deliveredOrder];
         // Get the customer's profile
         UserProfile storage profile = profiles[order.customer];
+        // Check if the order is not already delivered
+        require(order.state != OrderState.Delivered, "Order already delivered");
         // Check if the order is in the confirmed state
         require(order.state == OrderState.Confirmed, "Order not confirmed");
-        // Check if the sender is the customer
-        require(
-            msg.sender == order.customer,
-            "Only customer can confirm delivery"
-        );
 
         order.state = OrderState.Delivered;
 
