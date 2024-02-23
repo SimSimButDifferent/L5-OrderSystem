@@ -8,12 +8,13 @@ yarn
 
 ```bash
 yarn hardhat node
-yarn hardhat run scripts/deploy.js
+yarn hardhat run scripts/deploy.js --network localhost
+yarn hardhat test
 ```
 
-### To play around with a front end, paste into Remix IDE ---> remix.ethereum.org
+**To play around with a front end, paste into Remix IDE ---> remix.ethereum.org**
 
-### Lesson 5: Advanced Data Types in Solidity
+## Lesson 5: Advanced Data Types in Solidity
 
 **Objective:** Dive into advanced data types available in Solidity, focusing on their use cases, limitations, and how they can enhance the functionality and efficiency of smart contracts.
 
