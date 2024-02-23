@@ -21,6 +21,12 @@ describe("OrderSystem", function () {
             expect(order.amount).to.equal(orderAmount)
             expect(order.state).to.equal(0) // OrderState.Created
         })
+
+        it("Should emit an OrderCreated event", async function () {
+            await expect(orderSystem.createOrder(owner.address, orderAmount))
+                .to.emit(orderSystem, "OrderCreated")
+                .withArgs(orderId, owner.address, orderAmount)
+        })
     })
     describe("confirmOrder", function () {
         it("Should confirm an order", async function () {
@@ -28,6 +34,20 @@ describe("OrderSystem", function () {
             await orderSystem.confirmOrder(orderId)
             const order = await orderSystem.getOrder(orderId)
             expect(order.state).to.equal(1) // OrderState.Confirmed
+        })
+
+        it("Should emit an OrderConfirmed event", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await expect(orderSystem.confirmOrder(orderId))
+                .to.emit(orderSystem, "OrderConfirmed")
+                .withArgs(orderId, owner.address)
+        })
+
+        it("Only the order customer can confirm an order", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await expect(
+                orderSystem.connect(addr1).confirmOrder(orderId),
+            ).to.be.revertedWith("Only customer can confirm order")
         })
     })
 
@@ -38,6 +58,14 @@ describe("OrderSystem", function () {
             await orderSystem.confirmDelivery(orderId)
             const order = await orderSystem.getOrder(orderId)
             expect(order.state).to.equal(2) // OrderState.Delivered
+        })
+
+        it("Should emit an OrderDelivered event", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await expect(orderSystem.confirmDelivery(orderId))
+                .to.emit(orderSystem, "OrderDelivered")
+                .withArgs(orderId, owner.address)
         })
 
         it("Only the order customer can confirm delivery", async function () {
@@ -75,6 +103,30 @@ describe("OrderSystem", function () {
             )
             expect(profileName).to.equal(name)
             expect(profileAge).to.equal(age)
+        })
+
+        it("Should emit a ProfileCreated event", async function () {
+            const name = "Alice"
+            const age = "25"
+            await expect(orderSystem.connect(owner).setProfile(name, age))
+                .to.emit(orderSystem, "ProfileCreated")
+                .withArgs(owner.address, name, age)
+        })
+
+        it("Should revert if name is empty", async function () {
+            const name = ""
+            const age = "25"
+            await expect(
+                orderSystem.connect(owner).setProfile(name, age),
+            ).to.be.revertedWith("Name cannot be empty")
+        })
+
+        it("Should revert if age is empty", async function () {
+            const name = "Alice"
+            const age = ""
+            await expect(
+                orderSystem.connect(owner).setProfile(name, age),
+            ).to.be.revertedWith("Age cannot be empty")
         })
     })
 })

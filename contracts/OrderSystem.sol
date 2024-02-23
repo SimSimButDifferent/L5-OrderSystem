@@ -2,6 +2,17 @@
 
 pragma solidity ^0.8.0;
 
+/* Events */
+
+// Event to log the creation of an order
+event OrderCreated(uint orderId, address customer, uint amount);
+// Event to log the confirmation of an order
+event OrderConfirmed(uint orderId, address customer);
+//  Event to log the delivery of an order
+event OrderDelivered(uint orderId, address customer);
+// Event to log creating a user profile
+event ProfileCreated(address user, string name, string age);
+
 contract OrderSystem {
     /* State Variables */
     address private owner;
@@ -84,6 +95,9 @@ contract OrderSystem {
             _amount,
             OrderState.Created
         );
+    
+        emit OrderCreated(currentOrderId, _customer, _amount);
+
         return currentOrderId;
     }
 
@@ -92,12 +106,19 @@ contract OrderSystem {
      * @param OrderToBeConfirmed Order to be confirmed
      */
     function confirmOrder(uint OrderToBeConfirmed) public {
+        // Only customer can confirm the order
+        require(
+            msg.sender == orders[OrderToBeConfirmed].customer,
+            "Only customer can confirm order"
+        );
         // Get the order to be confirmed
         Order storage order = orders[OrderToBeConfirmed];
         // Check if the order is in the created state
         require(order.state == OrderState.Created, "Order already confirmed");
 
         order.state = OrderState.Confirmed;
+
+        emit OrderConfirmed(OrderToBeConfirmed, order.customer);
     }
 
     /**
@@ -121,6 +142,8 @@ contract OrderSystem {
 
         order.state = OrderState.Delivered;
 
+        emit OrderDelivered(deliveredOrder, order.customer);
+
         // remove from current orders and add to completed orders
         for (uint i = 0; i < profile.currentOrders.length; i++) {
             if (profile.currentOrders[i] == deliveredOrder) {
@@ -142,9 +165,14 @@ contract OrderSystem {
      * @param _age Age of the user
      */
     function setProfile(string memory _name, string memory _age) public {
+        // Check if the name and age are not empty
+        require(bytes(_name).length > 0, "Name cannot be empty");
+        require(bytes(_age).length > 0, "Age cannot be empty");
         // Set the user profile details
         profiles[msg.sender].name = _name;
         profiles[msg.sender].age = _age;
+
+        emit ProfileCreated(msg.sender, _name, _age);
     }
 
     /* Getter Functions */
