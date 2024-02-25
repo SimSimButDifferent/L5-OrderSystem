@@ -10,6 +10,8 @@ event OrderCreated(uint orderId, address customer, uint amount);
 event OrderConfirmed(uint orderId, address customer);
 //  Event to log the delivery of an order
 event OrderDelivered(uint orderId, address customer);
+// Event to log cancelation of an order
+event OrderCancelled(uint orderId, address customer);
 // Event to log creating a user profile
 event ProfileCreated(address user, string name, string age);
 
@@ -28,7 +30,8 @@ contract OrderSystem {
     enum OrderState {
         Created,
         Confirmed,
-        Delivered
+        Delivered,
+        Cancelled
     }
 
     /* Structs */
@@ -182,6 +185,44 @@ contract OrderSystem {
 
         // Add the order to the customer's completed orders
         profile.completedOrders.push(deliveredOrder);
+    }
+
+    function cancelOrder(uint idToCancel) public {
+        // require that the msg.sender is the user who created the order
+        require(
+            msg.sender == orders[idToCancel].customer,
+            "Only customer can cancel order"
+        );
+        // Get the order to be delivered
+        Order storage order = orders[idToCancel];
+        // Get the customer's profile
+        UserProfile storage profile = profiles[order.customer];
+        
+        // Check if the order is not already cancelled
+        if (order.state == OrderState.Cancelled) {
+            revert("Order already cancelled");
+        }
+
+        // Check if the order is not already delivered
+        require(order.state != OrderState.Delivered, "Order already delivered");
+        // Check if the order is in the confirmed state
+        require(order.state == OrderState.Confirmed, "Order not confirmed");
+
+        order.state = OrderState.Cancelled;
+
+        emit OrderCancelled(idToCancel, order.customer);
+
+        // remove from current orders
+        for (uint i = 0; i < profile.currentOrders.length; i++) {
+            if (profile.currentOrders[i] == idToCancel) {
+                profile.currentOrders[i] = profile.currentOrders[
+                    profile.currentOrders.length - 1
+                ];
+                profile.currentOrders.pop();
+                break;
+            }
+        }
+
     }
 
     

@@ -15,6 +15,43 @@ describe("OrderSystem", function () {
         await orderSystem.connect(owner).newUserProfile(name, age)
     })
 
+    describe("newUserProfile", function () {
+        it("Should set and get a user profile", async function () {
+            const name = "Alice"
+            const age = "25"
+            await orderSystem.connect(owner).newUserProfile(name, age)
+            const [profileName, profileAge] = await orderSystem.getProfile(
+                owner.address,
+            )
+            expect(profileName).to.equal(name)
+            expect(profileAge).to.equal(age)
+        })
+
+        it("Should emit a ProfileCreated event", async function () {
+            const name = "Alice"
+            const age = "25"
+            await expect(orderSystem.connect(owner).newUserProfile(name, age))
+                .to.emit(orderSystem, "ProfileCreated")
+                .withArgs(owner.address, name, age)
+        })
+
+        it("Should revert if name is empty", async function () {
+            const name = ""
+            const age = "25"
+            await expect(
+                orderSystem.connect(owner).newUserProfile(name, age),
+            ).to.be.revertedWith("Name cannot be empty")
+        })
+
+        it("Should revert if age is empty", async function () {
+            const name = "Alice"
+            const age = ""
+            await expect(
+                orderSystem.connect(owner).newUserProfile(name, age),
+            ).to.be.revertedWith("Age cannot be empty")
+        })
+    })
+
     describe("createOrder", function () {
         it("Should revert if User is not registered", async function () {
             await expect(
@@ -120,40 +157,47 @@ describe("OrderSystem", function () {
             ).to.be.revertedWith("Order already delivered")
         })
     })
-    describe("newUserProfile", function () {
-        it("Should set and get a user profile", async function () {
-            const name = "Alice"
-            const age = "25"
-            await orderSystem.connect(owner).newUserProfile(name, age)
-            const [profileName, profileAge] = await orderSystem.getProfile(
-                owner.address,
+
+    describe("cancelOrder", function () {
+        it("User can cancel an order", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.cancelOrder(orderId)
+            const order = await orderSystem.getOrder(orderId)
+            expect(order.state).to.equal(3) // OrderState.Cancelled
+        })
+
+        it("Should emit an OrderCancelled event", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await expect(orderSystem.cancelOrder(orderId))
+                .to.emit(orderSystem, "OrderCancelled")
+                .withArgs(orderId, owner.address)
+        })
+
+        it("Only the order customer can cancel an order", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await expect(
+                orderSystem.connect(addr1).cancelOrder(orderId),
+            ).to.be.revertedWith("Only customer can cancel order")
+        })
+
+        it("User cannot cancel an order that is already delivered", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.confirmDelivery(orderId)
+            await expect(orderSystem.cancelOrder(orderId)).to.be.revertedWith(
+                "Order already delivered",
             )
-            expect(profileName).to.equal(name)
-            expect(profileAge).to.equal(age)
         })
 
-        it("Should emit a ProfileCreated event", async function () {
-            const name = "Alice"
-            const age = "25"
-            await expect(orderSystem.connect(owner).newUserProfile(name, age))
-                .to.emit(orderSystem, "ProfileCreated")
-                .withArgs(owner.address, name, age)
-        })
-
-        it("Should revert if name is empty", async function () {
-            const name = ""
-            const age = "25"
-            await expect(
-                orderSystem.connect(owner).newUserProfile(name, age),
-            ).to.be.revertedWith("Name cannot be empty")
-        })
-
-        it("Should revert if age is empty", async function () {
-            const name = "Alice"
-            const age = ""
-            await expect(
-                orderSystem.connect(owner).newUserProfile(name, age),
-            ).to.be.revertedWith("Age cannot be empty")
+        it("User cannot cancel an order that is already cancelled", async function () {
+            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.cancelOrder(orderId)
+            await expect(orderSystem.cancelOrder(orderId)).to.be.revertedWith(
+                "Order already cancelled",
+            )
         })
     })
 
@@ -171,6 +215,26 @@ describe("OrderSystem", function () {
                 const order2 = order[1]
                 expect(order1).to.equal(0)
                 expect(order2).to.equal(1)
+            })
+        })
+
+        describe("getOrderState", function () {
+            it("Should get the state of an order", async function () {
+                const state = await orderSystem.getOrderState(orderId)
+                expect(state).to.equal(1) // OrderState.Confirmed
+            })
+        })
+
+        describe("getOrders", function () {
+            it("Should get an order of a specific user", async function () {
+                const order = await orderSystem.getOrders(owner.address)
+                expect(order[0]).to.equal(orderId)
+            })
+
+            it("Should only allow owner to call getOrders", async function () {
+                await expect(
+                    orderSystem.connect(addr1).getOrders(owner.address),
+                ).to.be.revertedWith("Only owner can call this function")
             })
         })
     })
