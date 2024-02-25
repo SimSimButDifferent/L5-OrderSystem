@@ -71,6 +71,22 @@ contract OrderSystem {
     /* Functions */
 
     /**
+     * @dev Set user profile. Must be called before placing an order
+     * @param _name Name of the user
+     * @param _age Age of the user
+     */
+    function newUserProfile(string memory _name, string memory _age) public {
+        // Check if the name and age are not empty
+        require(bytes(_name).length > 0, "Name cannot be empty");
+        require(bytes(_age).length > 0, "Age cannot be empty");
+        // Set the user profile details
+        profiles[msg.sender].name = _name;
+        profiles[msg.sender].age = _age;
+
+        emit ProfileCreated(msg.sender, _name, _age);
+    }
+
+    /**
      * @dev Create an order
      * @param _customer Address of the customer
      * @param _amount Amount of the order
@@ -168,22 +184,7 @@ contract OrderSystem {
         profile.completedOrders.push(deliveredOrder);
     }
 
-    /**
-     * @dev Set user profile
-     * @param _name Name of the user
-     * @param _age Age of the user
-     */
-    function setProfile(string memory _name, string memory _age) public {
-        // Check if the name and age are not empty
-        require(bytes(_name).length > 0, "Name cannot be empty");
-        require(bytes(_age).length > 0, "Age cannot be empty");
-        // Set the user profile details
-        profiles[msg.sender].name = _name;
-        profiles[msg.sender].age = _age;
-
-        emit ProfileCreated(msg.sender, _name, _age);
-    }
-
+    
     /* Getter Functions */
 
     /**

@@ -12,7 +12,7 @@ describe("OrderSystem", function () {
         orderSystem = await OrderSystem.deploy()
         const name = "Alice"
         const age = "25"
-        await orderSystem.connect(owner).setProfile(name, age)
+        await orderSystem.connect(owner).newUserProfile(name, age)
     })
 
     describe("createOrder", function () {
@@ -120,11 +120,11 @@ describe("OrderSystem", function () {
             ).to.be.revertedWith("Order already delivered")
         })
     })
-    describe("setProfile", function () {
+    describe("newUserProfile", function () {
         it("Should set and get a user profile", async function () {
             const name = "Alice"
             const age = "25"
-            await orderSystem.connect(owner).setProfile(name, age)
+            await orderSystem.connect(owner).newUserProfile(name, age)
             const [profileName, profileAge] = await orderSystem.getProfile(
                 owner.address,
             )
@@ -135,7 +135,7 @@ describe("OrderSystem", function () {
         it("Should emit a ProfileCreated event", async function () {
             const name = "Alice"
             const age = "25"
-            await expect(orderSystem.connect(owner).setProfile(name, age))
+            await expect(orderSystem.connect(owner).newUserProfile(name, age))
                 .to.emit(orderSystem, "ProfileCreated")
                 .withArgs(owner.address, name, age)
         })
@@ -144,7 +144,7 @@ describe("OrderSystem", function () {
             const name = ""
             const age = "25"
             await expect(
-                orderSystem.connect(owner).setProfile(name, age),
+                orderSystem.connect(owner).newUserProfile(name, age),
             ).to.be.revertedWith("Name cannot be empty")
         })
 
@@ -152,7 +152,7 @@ describe("OrderSystem", function () {
             const name = "Alice"
             const age = ""
             await expect(
-                orderSystem.connect(owner).setProfile(name, age),
+                orderSystem.connect(owner).newUserProfile(name, age),
             ).to.be.revertedWith("Age cannot be empty")
         })
     })
