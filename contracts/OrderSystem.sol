@@ -14,6 +14,8 @@ event OrderDelivered(uint orderId, address customer);
 event OrderCancelled(uint orderId, address customer);
 // Event to log creating a user profile
 event ProfileCreated(address user, string name, string age);
+// Event to log deleting a user profile
+event ProfileDeleted(address user);
 
 contract OrderSystem {
     /* State Variables */
@@ -187,17 +189,55 @@ contract OrderSystem {
         profile.completedOrders.push(deliveredOrder);
     }
 
+    function adminDeleteProfileAndOrders(address user) public onlyOwner {
+        require(
+            bytes(profiles[user].name).length > 0,
+            "Profile does not exist for the given address"
+        );
+        // Cancel all orders of user
+        for (uint i = 0; i < profiles[user].currentOrders.length; i++) {
+            cancelOrder(profiles[user].currentOrders[i]);
+        }
+        // Delete the user profile
+        delete profiles[user];
+        // Emit the event
+        emit ProfileDeleted(user);
+    }
+
+    /**
+     * @dev Delete user profile
+     */
+    function deleteProfile() public {
+        // Check if the profile exists
+        require(
+            bytes(profiles[msg.sender].name).length > 0,
+            "Profile does not exist for the given address"
+        );
+        require(profiles[msg.sender].currentOrders.length == 0, "Cannot delete profile with active orders");
+        // Delete the user profile
+        delete profiles[msg.sender];
+        // Emit the event
+        emit ProfileDeleted(msg.sender);
+    }
+
+    /**
+     * @dev Cancel an order
+     * @param idToCancel Order to be cancelled
+     */
     function cancelOrder(uint idToCancel) public {
         // require that the msg.sender is the user who created the order
-        require(
-            msg.sender == orders[idToCancel].customer,
-            "Only customer can cancel order"
-        );
+        if(msg.sender != owner){
+            require(
+                msg.sender == orders[idToCancel].customer,
+                "Only customer can cancel order"
+            );
+        }
+       
         // Get the order to be delivered
         Order storage order = orders[idToCancel];
         // Get the customer's profile
         UserProfile storage profile = profiles[order.customer];
-        
+
         // Check if the order is not already cancelled
         if (order.state == OrderState.Cancelled) {
             revert("Order already cancelled");
