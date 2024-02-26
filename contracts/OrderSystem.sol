@@ -93,20 +93,19 @@ contract OrderSystem {
 
     /**
      * @dev Create an order
-     * @param _customer Address of the customer
      * @param _amount Amount of the order
      * @return orderId of the created order
      */
     function createOrder(
-        address _customer,
         uint _amount
     ) public returns (uint) {
         // Check if the amount is greater than 0
         require(_amount > 0, "Amount should be greater than 0");
 
+        address customer = msg.sender;
         // Must create a user profile before placing an order
         require(
-            bytes(profiles[_customer].name).length > 0,
+            bytes(profiles[customer].name).length > 0,
             "User profile does not exist"
         );
 
@@ -115,18 +114,18 @@ contract OrderSystem {
         orderId++;
 
         // Add the order to the customer's profile
-        UserProfile storage profile = profiles[_customer];
+        UserProfile storage profile = profiles[customer];
         // Add the order to the customer's current orders
         profile.currentOrders.push(currentOrderId);
         // Add the order to the orders mapping
         orders[currentOrderId] = Order(
             currentOrderId,
-            _customer,
+            customer,
             _amount,
             OrderState.Created
         );
     
-        emit OrderCreated(currentOrderId, _customer, _amount);
+        emit OrderCreated(currentOrderId, customer, _amount);
 
         return currentOrderId;
     }
