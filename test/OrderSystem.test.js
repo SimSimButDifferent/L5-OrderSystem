@@ -56,7 +56,10 @@ describe("OrderSystem", function () {
         it("Should revert if User is not registered", async function () {
             await expect(
                 orderSystem.connect(addr1).createOrder(orderAmount),
-            ).to.be.revertedWith("User profile does not exist")
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "UserProfileDoesNotExist()",
+            )
         })
         it("Should create an order", async function () {
             await orderSystem.createOrder(orderAmount)
@@ -138,7 +141,7 @@ describe("OrderSystem", function () {
             await orderSystem.createOrder(orderAmount)
             await expect(
                 orderSystem.confirmDelivery(orderId),
-            ).to.be.revertedWith("Order not confirmed")
+            ).to.be.revertedWithCustomError(orderSystem, "OrderNotConfirmed()")
         })
 
         it("User cannot confirm delivery of an order that is already delivered", async function () {
@@ -148,7 +151,10 @@ describe("OrderSystem", function () {
 
             await expect(
                 orderSystem.confirmDelivery(orderId),
-            ).to.be.revertedWith("Order already delivered")
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "OrderAlreadyDelivered()",
+            )
         })
     })
 
@@ -175,10 +181,23 @@ describe("OrderSystem", function () {
                     .withArgs(owner.address)
             })
 
+            it("Should revert if user profile does not exist", async function () {
+                await orderSystem.deleteProfile()
+                await expect(
+                    orderSystem.deleteProfile(),
+                ).to.be.revertedWithCustomError(
+                    orderSystem,
+                    "UserProfileDoesNotExist()",
+                )
+            })
+
             it("Should revert if user has pending orders", async function () {
                 await orderSystem.createOrder(orderAmount)
-                await expect(orderSystem.deleteProfile()).to.be.revertedWith(
-                    "Cannot delete profile with active orders",
+                await expect(
+                    orderSystem.deleteProfile(),
+                ).to.be.revertedWithCustomError(
+                    orderSystem,
+                    "CannotDeleteProfileWithActiveOrders()",
                 )
             })
         })
@@ -213,7 +232,20 @@ describe("OrderSystem", function () {
                 await orderSystem.confirmDelivery(orderId)
                 await expect(
                     orderSystem.cancelOrder(orderId),
-                ).to.be.revertedWith("Order already delivered")
+                ).to.be.revertedWithCustomError(
+                    orderSystem,
+                    "OrderAlreadyDelivered()",
+                )
+            })
+
+            it("User cannot cancel an order that is not confirmed", async function () {
+                await orderSystem.createOrder(orderAmount)
+                await expect(
+                    orderSystem.cancelOrder(orderId),
+                ).to.be.revertedWithCustomError(
+                    orderSystem,
+                    "OrderNotConfirmed()",
+                )
             })
 
             it("User cannot cancel an order that is already cancelled", async function () {
@@ -222,7 +254,10 @@ describe("OrderSystem", function () {
                 await orderSystem.cancelOrder(orderId)
                 await expect(
                     orderSystem.cancelOrder(orderId),
-                ).to.be.revertedWith("Order already cancelled")
+                ).to.be.revertedWithCustomError(
+                    orderSystem,
+                    "OrderAlreadyCancelled()",
+                )
             })
         })
 

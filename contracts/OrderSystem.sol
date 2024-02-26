@@ -17,11 +17,33 @@ event ProfileCreated(address user, string name, string age);
 // Event to log deleting a user profile
 event ProfileDeleted(address user);
 
+/* Custom Errors */
+
+// Custom error for a user that has not yet created a profile
+error UserProfileDoesNotExist();
+// Custom error for an order that is already confirmed
+error OrderAlreadyConfirmed();
+// Custom error for an order that is already delivered
+error OrderAlreadyDelivered();
+// Custom error for an order that is not confirmed
+error OrderNotConfirmed();
+// Custom error so users can not delete profiles with active orders
+error CannotDeleteProfileWithActiveOrders();
+// Custom Error for order that is already cancelled
+error OrderAlreadyCancelled();
+
+
+
+/**
+ * @title OrderSystem
+ * @dev Contract to manage orders and user profiles
+ */
 contract OrderSystem {
     /* State Variables */
     address private owner;
 
-    // Owner of the contract
+    /* Constructor */
+    // Set the owner of the contract
     constructor() {
         owner = msg.sender;
     }
@@ -104,10 +126,11 @@ contract OrderSystem {
 
         address customer = msg.sender;
         // Must create a user profile before placing an order
-        require(
-            bytes(profiles[customer].name).length > 0,
-            "User profile does not exist"
-        );
+        if(
+            bytes(profiles[customer].name).length <= 0){
+                revert UserProfileDoesNotExist();
+            }
+        
 
         // Sets the orderId to the created order then increments OrderId
         uint currentOrderId = orderId;
@@ -132,22 +155,24 @@ contract OrderSystem {
 
     /**
      * @dev Confirm an order
-     * @param OrderToBeConfirmed Order to be confirmed
+     * @param orderToBeConfirmed Order to be confirmed
      */
-    function confirmOrder(uint OrderToBeConfirmed) public {
+    function confirmOrder(uint orderToBeConfirmed) public {
         // Only customer can confirm the order
         require(
-            msg.sender == orders[OrderToBeConfirmed].customer,
+            msg.sender == orders[orderToBeConfirmed].customer,
             "Only customer can confirm order"
         );
         // Get the order to be confirmed
-        Order storage order = orders[OrderToBeConfirmed];
+        Order storage order = orders[orderToBeConfirmed];
         // Check if the order is in the created state
-        require(order.state == OrderState.Created, "Order already confirmed");
+        if(order.state == OrderState.Confirmed){
+            revert OrderAlreadyConfirmed();
+        }
 
         order.state = OrderState.Confirmed;
 
-        emit OrderConfirmed(OrderToBeConfirmed, order.customer);
+        emit OrderConfirmed(orderToBeConfirmed, order.customer);
     }
 
     /**
@@ -165,9 +190,13 @@ contract OrderSystem {
         // Get the customer's profile
         UserProfile storage profile = profiles[order.customer];
         // Check if the order is not already delivered
-        require(order.state != OrderState.Delivered, "Order already delivered");
+        if(order.state == OrderState.Delivered){
+            revert OrderAlreadyDelivered();
+        }
         // Check if the order is in the confirmed state
-        require(order.state == OrderState.Confirmed, "Order not confirmed");
+        if(order.state != OrderState.Confirmed){
+            revert OrderNotConfirmed();
+        }
 
         order.state = OrderState.Delivered;
 
@@ -188,19 +217,19 @@ contract OrderSystem {
         profile.completedOrders.push(deliveredOrder);
     }
 
-    function adminDeleteProfileAndOrders(address user) public onlyOwner {
+    function adminDeleteProfileAndOrders(address _user) public onlyOwner {
         require(
-            bytes(profiles[user].name).length > 0,
+            bytes(profiles[_user].name).length > 0,
             "Profile does not exist for the given address"
         );
         // Cancel all orders of user
-        for (uint i = 0; i < profiles[user].currentOrders.length; i++) {
-            cancelOrder(profiles[user].currentOrders[i]);
+        for (uint i = 0; i < profiles[_user].currentOrders.length; i++) {
+            cancelOrder(profiles[_user].currentOrders[i]);
         }
         // Delete the user profile
-        delete profiles[user];
+        delete profiles[_user];
         // Emit the event
-        emit ProfileDeleted(user);
+        emit ProfileDeleted(_user);
     }
 
     /**
@@ -208,11 +237,14 @@ contract OrderSystem {
      */
     function deleteProfile() public {
         // Check if the profile exists
-        require(
-            bytes(profiles[msg.sender].name).length > 0,
-            "Profile does not exist for the given address"
-        );
-        require(profiles[msg.sender].currentOrders.length == 0, "Cannot delete profile with active orders");
+        if(
+            bytes(profiles[msg.sender].name).length <= 0){
+                revert UserProfileDoesNotExist();
+            }
+        // Check if the user has active orders
+        if(profiles[msg.sender].currentOrders.length != 0){
+            revert CannotDeleteProfileWithActiveOrders();
+        }
         // Delete the user profile
         delete profiles[msg.sender];
         // Emit the event
@@ -239,13 +271,17 @@ contract OrderSystem {
 
         // Check if the order is not already cancelled
         if (order.state == OrderState.Cancelled) {
-            revert("Order already cancelled");
+            revert OrderAlreadyCancelled();
         }
 
         // Check if the order is not already delivered
-        require(order.state != OrderState.Delivered, "Order already delivered");
+        if(order.state == OrderState.Delivered){
+            revert OrderAlreadyDelivered();
+        }
         // Check if the order is in the confirmed state
-        require(order.state == OrderState.Confirmed, "Order not confirmed");
+        if(order.state != OrderState.Confirmed){
+            revert OrderNotConfirmed();
+        }
 
         order.state = OrderState.Cancelled;
 
