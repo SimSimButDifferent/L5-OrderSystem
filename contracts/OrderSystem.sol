@@ -131,10 +131,11 @@ contract OrderSystem {
                 revert UserProfileDoesNotExist();
             }
         
-
+        // Increment the orderId
+        orderId++;
         // Sets the orderId to the created order then increments OrderId
         uint currentOrderId = orderId;
-        orderId++;
+        
 
         // Add the order to the customer's profile
         UserProfile storage profile = profiles[customer];
