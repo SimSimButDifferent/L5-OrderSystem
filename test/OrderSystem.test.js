@@ -55,11 +55,11 @@ describe("OrderSystem", function () {
     describe("createOrder", function () {
         it("Should revert if User is not registered", async function () {
             await expect(
-                orderSystem.createOrder(addr1.address, orderAmount),
+                orderSystem.connect(addr1).createOrder(orderAmount),
             ).to.be.revertedWith("User profile does not exist")
         })
         it("Should create an order", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             const order = await orderSystem.getOrder(orderId)
             expect(order.id).to.equal(orderId)
             expect(order.customer).to.equal(owner.address)
@@ -68,47 +68,41 @@ describe("OrderSystem", function () {
         })
 
         it("Should revert if order amount is 0", async function () {
-            await expect(
-                orderSystem.createOrder(owner.address, 0),
-            ).to.be.revertedWith("Amount should be greater than 0")
+            await expect(orderSystem.createOrder(0)).to.be.revertedWith(
+                "Amount should be greater than 0",
+            )
         })
 
         it("Should allow multiple orders", async function () {
-            const order1 = await orderSystem.createOrder(
-                owner.address,
-                orderAmount,
-            )
-            const order2 = await orderSystem.createOrder(
-                owner.address,
-                orderAmount,
-            )
+            const order1 = await orderSystem.createOrder(orderAmount)
+            const order2 = await orderSystem.createOrder(orderAmount)
             const order = await orderSystem.getOrder(orderId + 1)
             expect(order.id).to.equal(orderId + 1)
         })
 
         it("Should emit an OrderCreated event", async function () {
-            await expect(orderSystem.createOrder(owner.address, orderAmount))
+            await expect(orderSystem.createOrder(orderAmount))
                 .to.emit(orderSystem, "OrderCreated")
                 .withArgs(orderId, owner.address, orderAmount)
         })
     })
     describe("confirmOrder", function () {
         it("Should confirm an order", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await orderSystem.confirmOrder(orderId)
             const order = await orderSystem.getOrder(orderId)
             expect(order.state).to.equal(1) // OrderState.Confirmed
         })
 
         it("Should emit an OrderConfirmed event", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await expect(orderSystem.confirmOrder(orderId))
                 .to.emit(orderSystem, "OrderConfirmed")
                 .withArgs(orderId, owner.address)
         })
 
         it("Only the order customer can confirm an order", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await expect(
                 orderSystem.connect(addr1).confirmOrder(orderId),
             ).to.be.revertedWith("Only customer can confirm order")
@@ -117,7 +111,7 @@ describe("OrderSystem", function () {
 
     describe("confirmDelivery", function () {
         it("User can confirm delivery of an order", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await orderSystem.confirmOrder(orderId)
             await orderSystem.confirmDelivery(orderId)
             const order = await orderSystem.getOrder(orderId)
@@ -125,7 +119,7 @@ describe("OrderSystem", function () {
         })
 
         it("Should emit an OrderDelivered event", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await orderSystem.confirmOrder(orderId)
             await expect(orderSystem.confirmDelivery(orderId))
                 .to.emit(orderSystem, "OrderDelivered")
@@ -133,7 +127,7 @@ describe("OrderSystem", function () {
         })
 
         it("Only the order customer can confirm delivery", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await orderSystem.confirmOrder(orderId)
             await expect(
                 orderSystem.connect(addr1).confirmDelivery(orderId),
@@ -141,14 +135,14 @@ describe("OrderSystem", function () {
         })
 
         it("User cannot confirm delivery of an order that is not confirmed", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await expect(
                 orderSystem.confirmDelivery(orderId),
             ).to.be.revertedWith("Order not confirmed")
         })
 
         it("User cannot confirm delivery of an order that is already delivered", async function () {
-            await orderSystem.createOrder(owner.address, orderAmount)
+            await orderSystem.createOrder(orderAmount)
             await orderSystem.confirmOrder(orderId)
             await orderSystem.confirmDelivery(orderId)
 
@@ -163,7 +157,7 @@ describe("OrderSystem", function () {
             const name = "Bob"
             const age = "30"
             await orderSystem.connect(addr1).newUserProfile(name, age)
-            await orderSystem.createOrder(addr1.address, orderAmount)
+            await orderSystem.connect(addr1).createOrder(orderAmount)
             await orderSystem.connect(addr1).confirmOrder(orderId)
             await orderSystem.adminDeleteProfileAndOrders(addr1.address)
             await expect(
@@ -182,7 +176,7 @@ describe("OrderSystem", function () {
             })
 
             it("Should revert if user has pending orders", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await expect(orderSystem.deleteProfile()).to.be.revertedWith(
                     "Cannot delete profile with active orders",
                 )
@@ -191,7 +185,7 @@ describe("OrderSystem", function () {
 
         describe("cancelOrder", function () {
             it("User can cancel an order", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await orderSystem.confirmOrder(orderId)
                 await orderSystem.cancelOrder(orderId)
                 const order = await orderSystem.getOrder(orderId)
@@ -199,7 +193,7 @@ describe("OrderSystem", function () {
             })
 
             it("Should emit an OrderCancelled event", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await orderSystem.confirmOrder(orderId)
                 await expect(orderSystem.cancelOrder(orderId))
                     .to.emit(orderSystem, "OrderCancelled")
@@ -207,14 +201,14 @@ describe("OrderSystem", function () {
             })
 
             it("Only the order customer can cancel an order", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await expect(
                     orderSystem.connect(addr1).cancelOrder(orderId),
                 ).to.be.revertedWith("Only customer can cancel order")
             })
 
             it("User cannot cancel an order that is already delivered", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await orderSystem.confirmOrder(orderId)
                 await orderSystem.confirmDelivery(orderId)
                 await expect(
@@ -223,7 +217,7 @@ describe("OrderSystem", function () {
             })
 
             it("User cannot cancel an order that is already cancelled", async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await orderSystem.confirmOrder(orderId)
                 await orderSystem.cancelOrder(orderId)
                 await expect(
@@ -234,13 +228,13 @@ describe("OrderSystem", function () {
 
         describe("Getter functions", function () {
             beforeEach(async function () {
-                await orderSystem.createOrder(owner.address, orderAmount)
+                await orderSystem.createOrder(orderAmount)
                 await orderSystem.confirmOrder(orderId)
             })
 
             describe("getOrder", function () {
                 it("Should get an a users multiple orders", async function () {
-                    await orderSystem.createOrder(owner.address, orderAmount)
+                    await orderSystem.createOrder(orderAmount)
                     const order = await orderSystem.getMyOrders()
                     const order1 = order[0]
                     const order2 = order[1]
