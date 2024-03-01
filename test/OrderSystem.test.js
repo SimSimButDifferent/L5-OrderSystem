@@ -12,7 +12,7 @@ describe("OrderSystem", function () {
         orderSystem = await OrderSystem.deploy()
         const name = "Alice"
         const age = "25"
-        await orderSystem.connect(owner).newUserProfile(name, age)
+        await orderSystem.newUserProfile(name, age)
     })
 
     describe("newUserProfile", function () {
@@ -53,6 +53,9 @@ describe("OrderSystem", function () {
     })
 
     describe("createOrder", function () {
+        beforeEach(async function () {
+            await orderSystem.connect(owner).newUserProfile("Alice", "25")
+        })
         it("Should revert if User is not registered", async function () {
             await expect(
                 orderSystem.connect(addr1).createOrder(orderAmount),
@@ -62,7 +65,7 @@ describe("OrderSystem", function () {
             )
         })
         it("Should create an order", async function () {
-            await orderSystem.createOrder(orderAmount)
+            await orderSystem.connect(owner).createOrder(orderAmount)
             const order = await orderSystem.getOrder(orderId)
             expect(order.id).to.equal(orderId)
             expect(order.customer).to.equal(owner.address)
