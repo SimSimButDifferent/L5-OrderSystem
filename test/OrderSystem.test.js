@@ -173,132 +173,129 @@ describe("OrderSystem", function () {
                 orderSystem.getProfile(addr1.address),
             ).to.be.revertedWith("Profile does not exist for the given address")
         })
+    })
 
-        describe("deleteProfile", function () {
-            it("Should delete a user profile", async function () {
-                await orderSystem.deleteProfile()
-            })
-            it("Should emit a ProfileDeleted event", async function () {
-                await expect(orderSystem.deleteProfile())
-                    .to.emit(orderSystem, "ProfileDeleted")
-                    .withArgs(owner.address)
-            })
+    describe("deleteProfile", function () {
+        it("Should delete a user profile", async function () {
+            await orderSystem.deleteProfile()
+        })
+        it("Should emit a ProfileDeleted event", async function () {
+            await expect(orderSystem.deleteProfile())
+                .to.emit(orderSystem, "ProfileDeleted")
+                .withArgs(owner.address)
+        })
 
-            it("Should revert if user profile does not exist", async function () {
-                await orderSystem.deleteProfile()
-                await expect(
-                    orderSystem.deleteProfile(),
-                ).to.be.revertedWithCustomError(
-                    orderSystem,
-                    "UserProfileDoesNotExist()",
-                )
-            })
+        it("Should revert if user profile does not exist", async function () {
+            await orderSystem.deleteProfile()
+            await expect(
+                orderSystem.deleteProfile(),
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "UserProfileDoesNotExist()",
+            )
+        })
 
-            it("Should revert if user has pending orders", async function () {
+        it("Should revert if user has pending orders", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await expect(
+                orderSystem.deleteProfile(),
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "CannotDeleteProfileWithActiveOrders()",
+            )
+        })
+    })
+
+    describe("cancelOrder", function () {
+        it("User can cancel an order", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.cancelOrder(orderId)
+            const order = await orderSystem.getOrder(orderId)
+            expect(order.state).to.equal(3) // OrderState.Cancelled
+        })
+
+        it("Should emit an OrderCancelled event", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await expect(orderSystem.cancelOrder(orderId))
+                .to.emit(orderSystem, "OrderCancelled")
+                .withArgs(orderId, owner.address)
+        })
+
+        it("Only the order customer can cancel an order", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await expect(
+                orderSystem.connect(addr1).cancelOrder(orderId),
+            ).to.be.revertedWith("Only customer can cancel order")
+        })
+
+        it("User cannot cancel an order that is already delivered", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.confirmDelivery(orderId)
+            await expect(
+                orderSystem.cancelOrder(orderId),
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "OrderAlreadyDelivered()",
+            )
+        })
+
+        it("User cannot cancel an order that is not confirmed", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await expect(
+                orderSystem.cancelOrder(orderId),
+            ).to.be.revertedWithCustomError(orderSystem, "OrderNotConfirmed()")
+        })
+
+        it("User cannot cancel an order that is already cancelled", async function () {
+            await orderSystem.createOrder(orderAmount)
+            await orderSystem.confirmOrder(orderId)
+            await orderSystem.cancelOrder(orderId)
+            await expect(
+                orderSystem.cancelOrder(orderId),
+            ).to.be.revertedWithCustomError(
+                orderSystem,
+                "OrderAlreadyCancelled()",
+            )
+        })
+    })
+
+    describe("Getter functions", function () {
+        beforeEach(async function () {
+            await orderSystem.createOrder(orderAmount)
+            await orderSystem.confirmOrder(orderId)
+        })
+
+        describe("getOrder", function () {
+            it("Should get an a users multiple orders", async function () {
                 await orderSystem.createOrder(orderAmount)
-                await expect(
-                    orderSystem.deleteProfile(),
-                ).to.be.revertedWithCustomError(
-                    orderSystem,
-                    "CannotDeleteProfileWithActiveOrders()",
-                )
+                const order = await orderSystem.getMyOrders()
+                const order1 = order[0]
+                const order2 = order[1]
+                expect(order1).to.equal(0)
+                expect(order2).to.equal(1)
             })
         })
 
-        describe("cancelOrder", function () {
-            it("User can cancel an order", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await orderSystem.confirmOrder(orderId)
-                await orderSystem.cancelOrder(orderId)
-                const order = await orderSystem.getOrder(orderId)
-                expect(order.state).to.equal(3) // OrderState.Cancelled
-            })
-
-            it("Should emit an OrderCancelled event", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await orderSystem.confirmOrder(orderId)
-                await expect(orderSystem.cancelOrder(orderId))
-                    .to.emit(orderSystem, "OrderCancelled")
-                    .withArgs(orderId, owner.address)
-            })
-
-            it("Only the order customer can cancel an order", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await expect(
-                    orderSystem.connect(addr1).cancelOrder(orderId),
-                ).to.be.revertedWith("Only customer can cancel order")
-            })
-
-            it("User cannot cancel an order that is already delivered", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await orderSystem.confirmOrder(orderId)
-                await orderSystem.confirmDelivery(orderId)
-                await expect(
-                    orderSystem.cancelOrder(orderId),
-                ).to.be.revertedWithCustomError(
-                    orderSystem,
-                    "OrderAlreadyDelivered()",
-                )
-            })
-
-            it("User cannot cancel an order that is not confirmed", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await expect(
-                    orderSystem.cancelOrder(orderId),
-                ).to.be.revertedWithCustomError(
-                    orderSystem,
-                    "OrderNotConfirmed()",
-                )
-            })
-
-            it("User cannot cancel an order that is already cancelled", async function () {
-                await orderSystem.createOrder(orderAmount)
-                await orderSystem.confirmOrder(orderId)
-                await orderSystem.cancelOrder(orderId)
-                await expect(
-                    orderSystem.cancelOrder(orderId),
-                ).to.be.revertedWithCustomError(
-                    orderSystem,
-                    "OrderAlreadyCancelled()",
-                )
+        describe("getOrderState", function () {
+            it("Should get the state of an order", async function () {
+                const state = await orderSystem.getOrderState(orderId)
+                expect(state).to.equal(1) // OrderState.Confirmed
             })
         })
 
-        describe("Getter functions", function () {
-            beforeEach(async function () {
-                await orderSystem.createOrder(orderAmount)
-                await orderSystem.confirmOrder(orderId)
+        describe("getOrders", function () {
+            it("Should get an order of a specific user", async function () {
+                const order = await orderSystem.getOrders(owner.address)
+                expect(order[0]).to.equal(orderId)
             })
 
-            describe("getOrder", function () {
-                it("Should get an a users multiple orders", async function () {
-                    await orderSystem.createOrder(orderAmount)
-                    const order = await orderSystem.getMyOrders()
-                    const order1 = order[0]
-                    const order2 = order[1]
-                    expect(order1).to.equal(0)
-                    expect(order2).to.equal(1)
-                })
-            })
-
-            describe("getOrderState", function () {
-                it("Should get the state of an order", async function () {
-                    const state = await orderSystem.getOrderState(orderId)
-                    expect(state).to.equal(1) // OrderState.Confirmed
-                })
-            })
-
-            describe("getOrders", function () {
-                it("Should get an order of a specific user", async function () {
-                    const order = await orderSystem.getOrders(owner.address)
-                    expect(order[0]).to.equal(orderId)
-                })
-
-                it("Should only allow owner to call getOrders", async function () {
-                    await expect(
-                        orderSystem.connect(addr1).getOrders(owner.address),
-                    ).to.be.revertedWith("Only owner can call this function")
-                })
+            it("Should only allow owner to call getOrders", async function () {
+                await expect(
+                    orderSystem.connect(addr1).getOrders(owner.address),
+                ).to.be.revertedWith("Only owner can call this function")
             })
         })
     })
